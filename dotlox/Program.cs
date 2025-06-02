@@ -1,6 +1,7 @@
 ﻿internal class Program
 {
     static bool hadError = false;
+    static bool hadRuntimeError = false;
 
     private static void Main(string[] args)
     {
@@ -24,8 +25,9 @@
         var fileContent = File.ReadAllText(path);
         run(fileContent);
 
-        if (hadError)
-            System.Environment.Exit(65);
+        if (hadError) Environment.Exit(65);
+        if (hadRuntimeError) Environment.Exit(70);
+
     }
 
     private static void runPrompt()
@@ -43,24 +45,56 @@
 
     private static void run(string source)
     {
-        // Console.WriteLine(source);
-        var scanner = new Scanner(source);
+       var scanner = new Scanner(source);
         var tokens = scanner.scanTokens();
 
-        foreach (var token in tokens)
-        {
-            Console.WriteLine(token);
-        }
-    }
+        var parser = new Parser(tokens);
+        var expression = parser.Parse();
 
-    internal static void error(int line, string message)
-    {
-        report(line, "", message);
+        if (expression is null)
+        {
+                
+            hadError = true;
+            return;
+        }
+        if (hadError) return;
+
+        Console.WriteLine(new AstPrinter().Print(expression!));
+
+        var interpreter = new Interpreter();
+        interpreter.Interpret(expression);
+
     }
 
     private static void report(int line, string where, string message)
     {
         Console.WriteLine($"[line {line}] Error {where}: {message}");
         hadError = true;
+    }
+
+
+    internal static void error(int line, string message)
+    {
+        report(line, "", message);
+    }
+
+
+    internal static void error(Token token, String message)
+    {
+        if (token.type == TokenType.EOF)
+        {
+            report(token.line, " at end", message);
+        }
+        else
+        {
+            report(token.line, " at '" + token.lexeme + "'", message);
+        }
+    }
+
+
+    internal static void RuntimeError(RuntimeError error)
+    {
+        Console.WriteLine($"{error.Message} \n[line {error.token.line}]");
+        hadRuntimeError = true;
     }
 }

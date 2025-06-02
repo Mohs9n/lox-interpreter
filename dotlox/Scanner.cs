@@ -166,7 +166,7 @@ class Scanner(string source)
   }
 
   private void addToken(TokenType type, object? literal) {
-    string text = source.Substring(start, subStringLength); //TODO: check
+    string text = source.Substring(start, subStringLength);
     tokens.Add(new(type, text, literal, line));
   }
 
@@ -193,10 +193,10 @@ class Scanner(string source)
 
 class Token(TokenType type, string lexeme, object? literal, int line)
 {
-  readonly TokenType type = type;
-  readonly string lexeme = lexeme;
-  readonly object? literal = literal;
-  readonly int line = line;
+  public readonly TokenType type = type;
+  public readonly string lexeme = lexeme;
+  public readonly object? literal = literal;
+  public readonly int line = line;
 
   public override string ToString()
   {
