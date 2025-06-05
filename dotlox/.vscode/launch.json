@@ -1,0 +1,30 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug dotlox",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/Debug/net9.0/dotlox.dll",
+            "args": [
+                "${input:loxFilePath}"
+            ],
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false,
+            "console": "internalConsole",
+            "preLaunchTask": "build"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "loxFilePath",
+            "type": "pickString",
+            "description": "Choose a Lox file to execute",
+            "options": [
+                "LoxCode/print.lox",
+                "LoxCode/variables.lox",
+                ""
+            ]
+        }
+    ]
+}

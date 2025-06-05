@@ -49,20 +49,14 @@
         var tokens = scanner.scanTokens();
 
         var parser = new Parser(tokens);
-        var expression = parser.Parse();
+        var stmts = parser.Parse();
 
-        if (expression is null)
-        {
-                
-            hadError = true;
-            return;
-        }
         if (hadError) return;
 
-        Console.WriteLine(new AstPrinter().Print(expression!));
+        // Console.WriteLine(new AstPrinter().Print(expression!));
 
         var interpreter = new Interpreter();
-        interpreter.Interpret(expression);
+        interpreter.Interpret(stmts);
 
     }
 

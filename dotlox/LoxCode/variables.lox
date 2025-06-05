@@ -1,0 +1,27 @@
+var a = 1;
+var b = 2;
+print a + b;
+
+
+print "-----";
+var x;
+print x;
+
+print "-----";
+var greet = "Hello, ";
+print greet + "World!";
+
+print "-----";
+var y = 1;
+print y;
+y = 2;
+print y;
+y = "ok";
+print y;
+
+print "-----";
+var a = 1;
+{
+  var a = a + 2;
+  print a;
+}

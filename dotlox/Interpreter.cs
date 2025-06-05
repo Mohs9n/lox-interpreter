@@ -2,18 +2,99 @@ using static TokenType;
 
 internal class Interpreter
 {
+    private LoxEnvironment environment = new();
 
-    public void Interpret(Expr expression)
+    public void Interpret(List<Stmt> stmts)
     {
         try
         {
-            var value = Evaluate(expression);
-            Console.WriteLine(Stringify(value));
+            foreach (var stmt in stmts)
+            {
+                Execute(stmt);
+            }
         }
         catch (RuntimeError error)
         {
             Program.RuntimeError(error);
         }
+    }
+
+    private void Execute(Stmt stmt)
+    {
+        switch (stmt)
+        {
+            case Print(var expr):
+                ExecutePrint(expr);
+                break;
+            case Expression(var expr):
+                ExecuteExpression(expr);
+                break;
+            case Var(var name, var initializer):
+                ExecuteVarDecl(name, initializer);
+                break;
+            case Block(var stmts):
+                ExecuteBlock(stmts, new LoxEnvironment(environment));
+                break;
+            case If(var cond, var thenBranch, var elseBranch):
+                ExecuteIf(Evaluate(cond), thenBranch, elseBranch);
+                break;
+            case While(var cond, var body):
+                ExecuteWhile(cond, body);
+                break;
+            default:
+                throw new Exception("Unkown expression");
+        }
+    }
+
+    private void ExecuteWhile(Expr cond, Stmt body)
+    {
+      while (IsTruthy(Evaluate(cond)))
+        Execute(body);
+    }
+
+    private void ExecuteIf(object? cond, Stmt thenBranch, Stmt? elseBranch)
+    {
+      if (IsTruthy(cond))
+        Execute(thenBranch);
+      else if (elseBranch is not null)
+        Execute(elseBranch);
+    }
+
+    private void ExecuteBlock(List<Stmt> stmts, LoxEnvironment environment)
+    {
+        var previous = this.environment;
+        try
+        {
+            this.environment = environment;
+
+            foreach (var stmt in stmts)
+            {
+                Execute(stmt);
+            }
+        }
+        finally
+        {
+            this.environment = previous;
+        }
+    }
+
+    private void ExecuteVarDecl(Token name, Expr? initializer)
+    {
+        object? value = null;
+        if (initializer is not null)
+            value = Evaluate(initializer);
+        environment.Define(name.lexeme, value);
+    }
+
+    private void ExecuteExpression(Expr expr)
+    {
+        Evaluate(expr);
+    }
+
+    private void ExecutePrint(Expr expr)
+    {
+        var val = Evaluate(expr);
+        Console.WriteLine(Stringify(val));
     }
 
     public object? Evaluate(Expr expr) => expr switch
@@ -22,8 +103,36 @@ internal class Interpreter
         Grouping(var expression) => Evaluate(expression),
         Unary(var op, var right) => EvaluateUnary(op, Evaluate(right)),
         Binary(var left, var op, var right) => EvaluateBinary(op, Evaluate(left), Evaluate(right)),
+        Variable(var name) => EvaluateVariable(name),
+        Assign(var name, var value) => EvaluateAssign(name, Evaluate(value)),
+        Logical(var left, var op, var right) => EvaluateLogical(op, left, right),
         _ => throw new Exception("Unknown expression")
     };
+
+    private object? EvaluateLogical(Token op, Expr left, Expr right)
+    {
+      var l = Evaluate(left);
+
+      if (op.type == OR)
+      {
+        if (IsTruthy(l)) return l;
+      } else {
+        if (!IsTruthy(l)) return l;
+      }
+
+      return Evaluate(right);
+    }
+
+    private object? EvaluateAssign(Token name, object? value)
+    {
+        environment.Assign(name, value);
+        return value;
+    }
+
+    private object? EvaluateVariable(Token name)
+    {
+        return environment.Get(name);
+    }
 
 
     private object? EvaluateUnary(Token? op, object? right)
