@@ -22,6 +22,7 @@ internal class Parser(List<Token> tokens)
         try
         {
             if (Match(VAR)) return VarDeclaration();
+            if (Match(FUN)) return Function("function");
 
             return Statement();
         }
@@ -39,8 +40,48 @@ internal class Parser(List<Token> tokens)
         if (Match(LEFT_BRACE)) return new Block(Block());
         if (Match(IF)) return IfStatement();
         if (Match(WHILE)) return WhileStatement();
+        if (Match(RETURN)) return ReturnStatement();
 
         return ExpressionStatement();
+    }
+
+    private Stmt Function(string kind)
+    {
+      var name = Consume(IDENTIFIER, $"Expect {kind} name.");
+      Consume(LEFT_PAREN, $"Expect '(' after {kind} name.");
+      List<Token> parameters = [];
+      if (!Check(RIGHT_PAREN))
+      {
+        do
+        {
+          if (parameters.Count >= 255)
+          {
+            Error(Peek(), "Can't have more than 255 parameters.");
+          }
+
+          parameters.Add(Consume(IDENTIFIER, "Expect parameter name."));
+        } while (Match(COMMA));
+      }
+      Consume(RIGHT_PAREN, "Expect ')' after parameters");
+
+      Consume(LEFT_BRACE, $"Expect '{{' before {kind} block.");
+      var body = Block();
+
+      return new Function(name, parameters, body);
+    }
+
+    private Stmt ReturnStatement()
+    {
+      var keyword = Previous();
+      Expr? value = null;
+      if (!Check(SEMICOLON))
+      {
+        value = Expression();
+      }
+
+      Consume(SEMICOLON, "Expect ';' after return value.");
+
+      return new Return(keyword, value);
     }
 
     private Stmt ForStatement()
@@ -273,7 +314,39 @@ internal class Parser(List<Token> tokens)
             return new Unary(op, right);
         }
 
-        return Primary();
+        return Call();
+    }
+
+    private Expr Call()
+    {
+      var expr = Primary();
+
+      while(true) {
+        if (Match(LEFT_PAREN)) {
+          expr = FinishCall(expr);
+        } else {
+          break;
+        }
+      }
+
+      return expr;
+    }
+
+    private Expr FinishCall(Expr calle)
+    {
+      List<Expr> arguments = [];
+      if (!Check(RIGHT_PAREN)) {
+        do {
+          if (arguments.Count >= 255) {
+            Error(Peek(), "Can't have more than 255 arguments");
+          }
+          arguments.Add(Expression());
+        } while (Match(COMMA));
+      }
+
+      var paren = Consume(RIGHT_PAREN, "Expect ')' after arguments.");
+
+      return new Call(calle, paren, arguments);
     }
 
 

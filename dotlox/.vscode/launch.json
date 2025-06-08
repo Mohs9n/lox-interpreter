@@ -23,7 +23,8 @@
             "options": [
                 "LoxCode/print.lox",
                 "LoxCode/variables.lox",
-                ""
+                "LoxCode/functions.lox",
+                "LoxCode/closures.lox"
             ]
         }
     ]

@@ -1,1 +1,5 @@
-{}
+{
+    "github.copilot.enable": {
+        "csharp": false,
+    },
+}

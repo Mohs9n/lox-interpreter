@@ -2,7 +2,14 @@ using static TokenType;
 
 internal class Interpreter
 {
-    private LoxEnvironment environment = new();
+    private readonly LoxEnvironment globals = new();
+    private LoxEnvironment environment;
+
+    public Interpreter()
+    {
+        environment = globals;
+        globals.Define("clock", new ClockFunction());
+    }
 
     public void Interpret(List<Stmt> stmts)
     {
@@ -41,10 +48,33 @@ internal class Interpreter
             case While(var cond, var body):
                 ExecuteWhile(cond, body);
                 break;
+            case Function functionStmt:
+                var fun = new LoxFunction(functionStmt, environment);
+                environment.Define(functionStmt.Name.lexeme, fun);
+                break;
+            case Return(var keyword, var value):
+                object? val = null;
+                if (value is not null)
+                    val = Evaluate(value);
+                throw new ReturnControl(val);
             default:
-                throw new Exception("Unkown expression");
+                throw new Exception("Unkown statement.");
         }
     }
+
+
+    public object? Evaluate(Expr expr) => expr switch
+    {
+        Literal(var value) => value,
+        Grouping(var expression) => Evaluate(expression),
+        Unary(var op, var right) => EvaluateUnary(op, Evaluate(right)),
+        Binary(var left, var op, var right) => EvaluateBinary(op, Evaluate(left), Evaluate(right)),
+        Variable(var name) => EvaluateVariable(name),
+        Assign(var name, var value) => EvaluateAssign(name, Evaluate(value)),
+        Logical(var left, var op, var right) => EvaluateLogical(op, left, right),
+        Call(var calle, var paren, var arguments) => EvaluateCall(calle, paren, arguments),
+        _ => throw new Exception("Unknown expression")
+    };
 
     private void ExecuteWhile(Expr cond, Stmt body)
     {
@@ -60,7 +90,7 @@ internal class Interpreter
         Execute(elseBranch);
     }
 
-    private void ExecuteBlock(List<Stmt> stmts, LoxEnvironment environment)
+    public void ExecuteBlock(List<Stmt> stmts, LoxEnvironment environment)
     {
         var previous = this.environment;
         try
@@ -97,17 +127,30 @@ internal class Interpreter
         Console.WriteLine(Stringify(val));
     }
 
-    public object? Evaluate(Expr expr) => expr switch
+
+    private object? EvaluateCall(Expr calle, Token paren, List<Expr> arguments)
     {
-        Literal(var value) => value,
-        Grouping(var expression) => Evaluate(expression),
-        Unary(var op, var right) => EvaluateUnary(op, Evaluate(right)),
-        Binary(var left, var op, var right) => EvaluateBinary(op, Evaluate(left), Evaluate(right)),
-        Variable(var name) => EvaluateVariable(name),
-        Assign(var name, var value) => EvaluateAssign(name, Evaluate(value)),
-        Logical(var left, var op, var right) => EvaluateLogical(op, left, right),
-        _ => throw new Exception("Unknown expression")
-    };
+        var calleVal = Evaluate(calle);
+
+        List<object?> args = [];
+        foreach (var arg in arguments)
+        {
+            args.Add(Evaluate(arg));
+        }
+
+        if (calleVal is not ILoxCallable fn)
+        {
+            throw new RuntimeError(paren, "Can only call functions and classes.");
+        }
+
+
+        if (args.Count != fn.Arity())
+        {
+            throw new RuntimeError(paren, $"Expected {fn.Arity()} arguments but got {args.Count}.");
+        }
+
+        return fn.Call(this, args);
+    }
 
     private object? EvaluateLogical(Token op, Expr left, Expr right)
     {
@@ -257,4 +300,69 @@ internal class Interpreter
 internal class RuntimeError(Token token, string message) : Exception(message)
 {
     public readonly Token token = token;
+}
+
+internal interface ILoxCallable
+{
+    int Arity();
+    object? Call(Interpreter interpreter, List<object?> arguments);
+}
+
+
+internal class ClockFunction : ILoxCallable
+{
+    public int Arity() => 0;
+
+    public object? Call(Interpreter interpreter, List<object?> arguments)
+    {
+        return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
+    }
+
+    public override string ToString() => "<native fn>";
+}
+
+internal class LoxFunction(Function declaration, LoxEnvironment closure) : ILoxCallable
+{
+    private readonly Function declaration = declaration;
+
+    private readonly LoxEnvironment closure = closure;
+    public int Arity()
+    {
+        return declaration.Parameters.Count;
+    }
+
+    public object? Call(Interpreter interpreter, List<object?> arguments)
+    {
+        var environment = new LoxEnvironment(closure);
+        for (int i = 0; i < declaration.Parameters.Count; i++)
+        {
+            environment.Define(declaration.Parameters[i].lexeme, arguments[i]);
+        }
+
+        try
+        {
+            interpreter.ExecuteBlock(declaration.Body, environment);
+        }
+        catch (ReturnControl returnVal)
+        {
+            return returnVal.Value;
+        }
+
+        return null;
+    }
+
+    public override string ToString() => $"<fn {declaration.Name.lexeme}>";
+}
+
+
+public class ReturnControl : Exception
+{
+    public object? Value { get; }
+
+    public ReturnControl(object? value) : base(null)
+    {
+        Value = value;
+    }
+
+    public override string StackTrace => "";
 }
