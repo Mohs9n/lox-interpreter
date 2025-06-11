@@ -15,6 +15,17 @@ internal class LoxEnvironment(LoxEnvironment? enclosing = null)
         
         throw new RuntimeError(name, $"Undefined variable {name.lexeme}.");
     }
+    
+    public object? GetAt(int distance, string name)
+      => Ancestor(distance).values[name];
+
+    private LoxEnvironment Ancestor(int distance)
+    {
+      var environment = this;
+      for (int i = 0; i < distance; i++)
+        environment = environment!.enclosing;
+      return environment!;
+    }
     public void Define(string name, object? value)
     {
         // values.Add(name, value);
@@ -36,5 +47,10 @@ internal class LoxEnvironment(LoxEnvironment? enclosing = null)
         }
 
         throw new RuntimeError(name, $"Undefined variable {name.lexeme}.");
+    }
+
+    public void AssignAt(int distance, Token name, object? value)
+    {
+      Ancestor(distance).values[name.lexeme] = value;
     }
 }

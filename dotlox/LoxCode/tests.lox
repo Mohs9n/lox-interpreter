@@ -1,0 +1,71 @@
+var passed = 0;
+var failed = 0;
+
+fun assertEqual(name, actual, expected) {
+  if (actual == expected) {
+    print "[PASS] " + name;
+    passed = passed + 1;
+  } else {
+    print "[FAIL] " + name + ": expected " + expected + ", got " + actual;
+    failed = failed + 1;
+  }
+}
+
+fun runTests() {
+  // Arithmetic
+  assertEqual("1 + 2", 1 + 2, 3);
+  assertEqual("2 * 3", 2 * 3, 6);
+  assertEqual("5 - 3", 5 - 3, 2);
+  assertEqual("10 / 2", 10 / 2, 5);
+
+  // Logic
+  assertEqual("true and false", true and false, false);
+  assertEqual("true or false", true or false, true);
+  assertEqual("!true", !true, false);
+
+  // Variables
+  var x = 10;
+  assertEqual("x == 10", x, 10);
+  x = x + 1;
+  assertEqual("x + 1", x, 11);
+
+  // Function return
+  fun add(a, b) {
+    return a + b;
+  }
+  assertEqual("add(2, 3)", add(2, 3), 5);
+
+  // Closure
+  fun makeCounter() {
+    var i = 0;
+    fun count() {
+      i = i + 1;
+      return i;
+    }
+    return count;
+  }
+  var counter = makeCounter();
+  assertEqual("counter() #1", counter(), 1);
+  assertEqual("counter() #2", counter(), 2);
+  
+  // Closure scope
+  var a = "global";
+  {
+    fun showA() {
+      return a;
+    }
+  
+    assertEqual("clsure scope before shadowing", showA(), "global");
+    var a = "block";
+    assertEqual("clsure scope after shadowing", showA(), "global");
+  }
+
+}
+
+runTests();
+
+print "";
+print "Tests passed:";
+print passed;
+print "Tests failed: ";
+print failed;

@@ -4,6 +4,7 @@ internal class Interpreter
 {
     private readonly LoxEnvironment globals = new();
     private LoxEnvironment environment;
+    private readonly Dictionary<Expr, int> locals = [];
 
     public Interpreter()
     {
@@ -69,12 +70,17 @@ internal class Interpreter
         Grouping(var expression) => Evaluate(expression),
         Unary(var op, var right) => EvaluateUnary(op, Evaluate(right)),
         Binary(var left, var op, var right) => EvaluateBinary(op, Evaluate(left), Evaluate(right)),
-        Variable(var name) => EvaluateVariable(name),
-        Assign(var name, var value) => EvaluateAssign(name, Evaluate(value)),
+        Variable varExpr => EvaluateVariable(varExpr),
+        Assign assignExpr => EvaluateAssign(assignExpr),
         Logical(var left, var op, var right) => EvaluateLogical(op, left, right),
         Call(var calle, var paren, var arguments) => EvaluateCall(calle, paren, arguments),
         _ => throw new Exception("Unknown expression")
     };
+
+    public void Resolve(Expr expr, int depth)
+    {
+      locals[expr] = depth;
+    }
 
     private void ExecuteWhile(Expr cond, Stmt body)
     {
@@ -166,15 +172,31 @@ internal class Interpreter
       return Evaluate(right);
     }
 
-    private object? EvaluateAssign(Token name, object? value)
+    private object? EvaluateAssign(Assign expr)
     {
-        environment.Assign(name, value);
-        return value;
+      var value = Evaluate(expr.Value);
+
+      var found = locals.TryGetValue(expr, out var distance);
+      if (found)
+        environment.AssignAt(distance, expr.Name, value);
+      else
+        globals.Assign(expr.Name, value);
+
+      return value;
     }
 
-    private object? EvaluateVariable(Token name)
+    private object? EvaluateVariable(Variable expr)
     {
-        return environment.Get(name);
+        return LookUpVariable(expr.Name, expr);
+    }
+
+    private object? LookUpVariable(Token name, Expr expr)
+    {
+      var found = locals.TryGetValue(expr, out var distance);
+      if (found)
+        return environment.GetAt(distance, name.lexeme);
+      else
+        return globals.Get(name);
     }
 
 

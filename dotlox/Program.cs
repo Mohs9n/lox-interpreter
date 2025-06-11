@@ -45,7 +45,7 @@
 
     private static void run(string source)
     {
-       var scanner = new Scanner(source);
+        var scanner = new Scanner(source);
         var tokens = scanner.scanTokens();
 
         var parser = new Parser(tokens);
@@ -53,11 +53,14 @@
 
         if (hadError) return;
 
-        // Console.WriteLine(new AstPrinter().Print(expression!));
 
         var interpreter = new Interpreter();
-        interpreter.Interpret(stmts);
+        var resolver = new Resolver(interpreter);
 
+        resolver.Resolve(stmts);
+        if (hadError) return;
+
+        interpreter.Interpret(stmts);
     }
 
     private static void report(int line, string where, string message)
