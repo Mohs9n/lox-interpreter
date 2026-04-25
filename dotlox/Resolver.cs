@@ -57,7 +57,7 @@ internal class Resolver(Interpreter interpreter)
         break;
       case Return(var keyword, var value):
         if (currentFn == FunctionType.NONE)
-          Program.error(keyword, "Can't return from top-level code.");
+          Program.Error(keyword, "Can't return from top-level code.");
         if (value is not null)
           Resolve(value);
         break;
@@ -74,7 +74,7 @@ internal class Resolver(Interpreter interpreter)
         if (scopes.Count != 0 &&
             ScopesPeek().TryGetValue(varExpr.Name.lexeme, out var defined) &&
             defined == false)
-          Program.error(varExpr.Name, "Can't read local variable in it's own initializer.");
+          Program.Error(varExpr.Name, "Can't read local variable in it's own initializer.");
         ResolveLocal(varExpr, varExpr.Name);
         break;
       case Assign assignExpr:
@@ -151,7 +151,7 @@ internal class Resolver(Interpreter interpreter)
     if (scopes.Count is 0) return;
     var scope = ScopesPeek();
     if (scope.ContainsKey(name.lexeme))
-      Program.error(name, "Already a variable with this name in this scope.");
+      Program.Error(name, "Already a variable with this name in this scope.");
     scope[name.lexeme] = false;
   }
 

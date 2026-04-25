@@ -12,25 +12,25 @@
         }
         else if (args.Length == 1)
         {
-            runFile(args[0]);
+            RunFile(args[0]);
         }
         else
         {
-            runPrompt();
+            RunPrompt();
         }
     }
 
-    private static void runFile(string path)
+    private static void RunFile(string path)
     {
         var fileContent = File.ReadAllText(path);
-        run(fileContent);
+        Run(fileContent);
 
         if (hadError) Environment.Exit(65);
         if (hadRuntimeError) Environment.Exit(70);
 
     }
 
-    private static void runPrompt()
+    private static void RunPrompt()
     {
         while (true)
         {
@@ -38,15 +38,15 @@
             var line = Console.ReadLine();
             if (line is null)
                 break;
-            run(line);
+            Run(line);
             hadError = false;
         }
     }
 
-    private static void run(string source)
+    private static void Run(string source)
     {
         var scanner = new Scanner(source);
-        var tokens = scanner.scanTokens();
+        var tokens = scanner.ScanTokens();
 
         var parser = new Parser(tokens);
         var stmts = parser.Parse();
@@ -63,28 +63,28 @@
         interpreter.Interpret(stmts);
     }
 
-    private static void report(int line, string where, string message)
+    private static void Report(int line, string where, string message)
     {
         Console.WriteLine($"[line {line}] Error {where}: {message}");
         hadError = true;
     }
 
 
-    internal static void error(int line, string message)
+    internal static void Error(int line, string message)
     {
-        report(line, "", message);
+        Report(line, "", message);
     }
 
 
-    internal static void error(Token token, String message)
+    internal static void Error(Token token, string message)
     {
         if (token.type == TokenType.EOF)
         {
-            report(token.line, " at end", message);
+            Report(token.line, " at end", message);
         }
         else
         {
-            report(token.line, " at '" + token.lexeme + "'", message);
+            Report(token.line, " at '" + token.lexeme + "'", message);
         }
     }
 

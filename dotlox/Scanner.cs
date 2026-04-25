@@ -8,22 +8,22 @@ class Scanner(string source)
   private int start = 0;
   private int current = 0;
   private int line = 1;
-  private bool isAtEnd => current >= source.Length;
-  private int subStringLength => current - start;
+  private bool IsAtEnd => current >= source.Length;
+  private int SubStringLength => current - start;
 
-  internal List<Token> scanTokens()
+  internal List<Token> ScanTokens()
   {
-    while (!isAtEnd)
+    while (!IsAtEnd)
     {
       start = current;
-      scanToken();
+      ScanToken();
     }
 
     tokens.Add(new(EOF, "", null, line));
     return tokens;
   }
 
-  private void scanToken() {
+  private void ScanToken() {
     char c = advance();
     switch (c) {
       case '(': addToken(LEFT_PAREN); break;
@@ -51,7 +51,7 @@ class Scanner(string source)
       case '/':
           if (match('/'))
           {
-            while(peek() != '\n' && !isAtEnd)
+            while(peek() != '\n' && !IsAtEnd)
               advance();
           } else {
             addToken(SLASH);
@@ -71,18 +71,18 @@ class Scanner(string source)
         if (isDigit(c)) {
           consume_number();
         } else if (isAlpha(c)) {
-          identifier();
+          Identifier();
         } else {
-          Program.error(line, "Unexpected character");
+          Program.Error(line, "Unexpected character");
         }
         break;
     }
   }
 
-  private void identifier() {
+  private void Identifier() {
     while (isAlphaNumeric(peek())) advance();
 
-    string text = source.Substring(start, subStringLength);
+    string text = source.Substring(start, SubStringLength);
     var found = keywords.TryGetValue(text, out var type);
     if (!found)
       type = IDENTIFIER;
@@ -99,24 +99,24 @@ class Scanner(string source)
       while(isDigit(peek())) advance();
     }
 
-    addToken(NUMBER, double.Parse(source.Substring(start, subStringLength)));
+    addToken(NUMBER, double.Parse(source.Substring(start, SubStringLength)));
   }
 
   private void consume_string() {
-    while (peek() != '"' && !isAtEnd)
+    while (peek() != '"' && !IsAtEnd)
     {
       if (peek() == '\n') line++;
       advance();
     }
 
-    if (isAtEnd) {
-      Program.error(line, "Unterminated string.");
+    if (IsAtEnd) {
+      Program.Error(line, "Unterminated string.");
       return;
     }
 
     advance();
 
-    string value = source.Substring(start + 1, subStringLength - 2);
+    string value = source.Substring(start + 1, SubStringLength - 2);
     addToken(STRING, value);
   }
 
@@ -136,7 +136,7 @@ class Scanner(string source)
 
   private bool match(char expected)
   {
-    if (isAtEnd) return false;
+    if (IsAtEnd) return false;
     if (source[current] != expected) return false;
 
     current++;
@@ -144,7 +144,7 @@ class Scanner(string source)
   }
 
   private char peek() {
-    if (isAtEnd) return '\0';
+    if (IsAtEnd) return '\0';
     return source[current];
   }
 
@@ -166,7 +166,7 @@ class Scanner(string source)
   }
 
   private void addToken(TokenType type, object? literal) {
-    string text = source.Substring(start, subStringLength);
+    string text = source.Substring(start, SubStringLength);
     tokens.Add(new(type, text, literal, line));
   }
 

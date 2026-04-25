@@ -412,7 +412,7 @@ internal class Parser(List<Token> tokens)
 
     private ParseError Error(Token token, String message)
     {
-        Program.error(token, message);
+        Program.Error(token, message);
         return new ParseError();
     }
 
